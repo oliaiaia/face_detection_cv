@@ -1,12 +1,12 @@
-#include<opencv2/imgcodecs.hpp>
-#include<opencv2/highgui.hpp>
-#include<opencv2/imgproc.hpp>
-#include<iostream>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <iostream>
 #include <unistd.h>
 #include <vector>
 #include <filesystem>
 
-#include<opencv2/objdetect.hpp>
+#include <opencv2/objdetect.hpp>
 
 
 using namespace std;
@@ -50,7 +50,7 @@ void faseDetection() {
 
         // Show the image with detected faces
         string windowName = "Detected faces - " + fs::path(imgPath).filename().string();
-        imshow(windowName, img);
+        // imshow(windowName, img);
         
         // Save the result
         fs::path resultsDir = fs::path(SOURCE_DIR) / "results";
@@ -61,7 +61,7 @@ void faseDetection() {
         string outputPath = outFile.string();
         imwrite(outputPath, img);
         
-        destroyWindow(windowName);
+        // destroyWindow(windowName);
     }
 
 
