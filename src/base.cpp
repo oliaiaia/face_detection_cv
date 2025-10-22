@@ -14,11 +14,13 @@ using namespace cv;
 namespace fs = std::filesystem;
 
 void faseDetection() {
-    string datasetPath = "/home/olia/Skoltech/Software/face_detection_cv/dataset/";
+    string pathToPhotosFromMainDir = "/dataset/";
+    string datasetPath = SOURCE_DIR + pathToPhotosFromMainDir;
     
     //study cascade classifier
     CascadeClassifier faseCascade;
-    faseCascade.load("/home/olia/Skoltech/Software/face_detection_cv/teacher_dataset/haarcascade_frontalface_default.xml");
+    string pathToStudyDatasetFromMainDir = "/teacher_dataset/haarcascade_frontalface_default.xml";
+    faseCascade.load(SOURCE_DIR + pathToStudyDatasetFromMainDir);
     if(faseCascade.empty()) 
     {
         cerr << "Empty cascade classifier file!" << endl;
