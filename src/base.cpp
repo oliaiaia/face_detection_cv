@@ -4,39 +4,59 @@
 #include<iostream>
 #include <unistd.h>
 #include <vector>
+#include <filesystem>
 
 #include<opencv2/objdetect.hpp>
 
 
 using namespace std;
 using namespace cv;
+namespace fs = std::filesystem;
 
 void faseDetection() {
-
-    VideoCapture video(0); //id of webcam
-    // load webcam image
-    cv::Mat webcam;
- 
+    string datasetPath = "/home/olia/Skoltech/Software/face_detection_cv/dataset/";
+    
     //study cascade classifier
     CascadeClassifier faseCascade;
-    faseCascade.load("/home/olia/CLionProjects/opencv_base/Resources/haarcascade_frontalface_default.xml");
+    faseCascade.load("/home/olia/Skoltech/Software/face_detection_cv/teacher_dataset/haarcascade_frontalface_default.xml");
     if(faseCascade.empty()) 
     {
-        cerr << "Empty file!" << endl;
+        cerr << "Empty cascade classifier file!" << endl;
         return;
     }
 
-    vector<Rect> faces;
-
-    while(true) {
-        video.read(webcam);
-        faseCascade.detectMultiScale(webcam, faces, 1.1, 10);
-        if(faces.size() > 0) std::cout << "face amount: " << faces.size() << std::endl;
-        for(int t = 0; t < faces.size(); t++) {
-            rectangle(webcam, faces[t].tl(), faces[t].br(), Scalar(255, 0, 0), 3); 
+    // Process each image in the dataset folder
+    for (const auto & entry : fs::directory_iterator(datasetPath)) {
+        string imgPath = entry.path();
+        cout << "Processing: " << imgPath << endl;
+        
+        // Read the image
+        Mat img = imread(imgPath);
+        if(img.empty()) {
+            cerr << "Could not read image: " << imgPath << endl;
+            continue;
         }
-        cv::imshow("Image", webcam);
-        cv::waitKey(20); //delay in ms
+
+        vector<Rect> faces;
+        faseCascade.detectMultiScale(img, faces, 1.1, 10);
+        cout << "Found " << faces.size() << " faces in " << imgPath << endl;
+
+        // Draw rectangles around detected faces
+        for(const auto& face : faces) {
+            rectangle(img, face.tl(), face.br(), Scalar(255, 0, 255), 3);
+        }
+
+        // Show the image with detected faces
+        string windowName = "Detected faces - " + fs::path(imgPath).filename().string();
+        imshow(windowName, img);
+        
+        // Save the result
+        string outputPath = imgPath.substr(0, imgPath.find_last_of('.')) + "_detected.jpg";
+        imwrite(outputPath, img);
+        
+        // Wait for a key press before processing next image
+        waitKey(0);
+        destroyWindow(windowName);
     }
 
 
