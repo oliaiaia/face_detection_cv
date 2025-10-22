@@ -53,11 +53,14 @@ void faseDetection() {
         imshow(windowName, img);
         
         // Save the result
-        string outputPath = imgPath.substr(0, imgPath.find_last_of('.')) + "_detected.jpg";
+        fs::path resultsDir = fs::path(SOURCE_DIR) / "results";
+        if (!fs::exists(resultsDir)) {
+            fs::create_directories(resultsDir);
+        }
+        fs::path outFile = resultsDir / (fs::path(imgPath).stem().string() + "_detected.jpg");
+        string outputPath = outFile.string();
         imwrite(outputPath, img);
         
-        // Wait for a key press before processing next image
-        waitKey(0);
         destroyWindow(windowName);
     }
 
