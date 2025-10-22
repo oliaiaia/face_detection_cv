@@ -8,7 +8,6 @@
 #include<opencv2/objdetect.hpp>
 
 
-
 using namespace std;
 using namespace cv;
 
