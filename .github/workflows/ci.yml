@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop, feat/** ]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up CMake build environment
+        run: |
+          sudo apt update
+          sudo apt install -y cmake g++ make libopencv-dev
+
+      - name: Build project
+        run: |
+          mkdir -p build
+          cd build
+          cmake ..
+          make -j$(nproc)
+
+      - name: Run tests
+        run: |
+          cd build
+          ctest --output-on-failure
