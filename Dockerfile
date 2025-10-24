@@ -1,22 +1,21 @@
-FROM ubuntu:22.04
+FROM python:3.11-slim
+
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONPATH=/face_detection_cv
 
 RUN apt-get update && apt-get install -y \
-    build-essential cmake libopencv-dev && \
-    rm -rf /var/lib/apt/lists/*
+    build-essential cmake git \
+    libopencv-dev pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+WORKDIR /face_detection_cv
 
-COPY . .
+COPY . /face_detection_cv
 
-# Создаем структуру папок для программы
-RUN mkdir -p cpp/teacher_dataset cpp/dataset cpp/results && \
-    cp teacher_dataset/*.xml cpp/teacher_dataset/ && \
-    cp -r dataset/* cpp/dataset/ 2>/dev/null || true
+RUN pip install --no-cache-dir -r python/requirements.txt
 
-# Собираем из папки cpp
-RUN mkdir -p build && cd build \
-    && cmake ../cpp \
-    && cmake --build .
+RUN mkdir -p build && cd build && cmake .. && make -j$(nproc)
 
-CMD ["./build/face_detector"]
+EXPOSE 1616
+
+CMD ["python3", "backend/app/main.py"]

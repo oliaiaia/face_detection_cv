@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Face Detection Web UI</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  input[type=file] { margin-bottom: 10px; }
+  button { padding: 8px 16px; margin-top: 10px; }
+  img { max-width: 300px; margin: 10px 0; display: block; border: 1px solid #ccc; }
+  .result { margin-top: 20px; }
+</style>
+</head>
+<body>
+<h1>Face Detection</h1>
+
+<p>Select one or more images:</p>
+<input type="file" id="fileInput" multiple accept="image/*">
+<button onclick="uploadFiles()">Detect Faces</button>
+
+<div id="results" class="result"></div>
+
+<script>
+async function uploadFiles() {
+    const files = document.getElementById("fileInput").files;
+    const resultsDiv = document.getElementById("results");
+    resultsDiv.innerHTML = "";
+
+    if (files.length === 0) {
+        alert("Please select at least one file.");
+        return;
+    }
+
+    for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const response = await fetch("http://localhost:1616/detect", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                resultsDiv.innerHTML += `<p style="color:red">Error: ${errorData.detail}</p>`;
+                continue;
+            }
+
+            const data = await response.json();
+
+            // Show original and detected images
+            const imgOriginal = document.createElement("img");
+            imgOriginal.src = URL.createObjectURL(file);
+            imgOriginal.alt = "Original";
+
+            const imgDetected = document.createElement("img");
+            imgDetected.src = `http://localhost:1616/results/${file.name.replace(/\.[^.]+$/, "_detected.jpg")}`;
+            imgDetected.alt = "Detected";
+
+            const container = document.createElement("div");
+            container.appendChild(document.createTextNode(file.name));
+            container.appendChild(imgOriginal);
+            container.appendChild(imgDetected);
+
+            resultsDiv.appendChild(container);
+
+        } catch (err) {
+            resultsDiv.innerHTML += `<p style="color:red">Error uploading ${file.name}: ${err}</p>`;
+        }
+    }
+}
+</script>
+</body>
+</html>
