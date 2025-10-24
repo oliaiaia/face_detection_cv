@@ -13,8 +13,10 @@ namespace fs = std::filesystem;
 
 // Allow both manual file and full dataset folder modes
 void FaceDetection(const string& singleImagePath = "") {
-    fs::path datasetDir = "cpp/dataset";
-    fs::path resultsDir = "cpp/results";
+    // Correct, universal paths relative to the binary location
+    fs::path datasetDir = "../dataset";
+    fs::path resultsDir = "../results";
+    fs::path cascadePath = "../teacher_dataset/haarcascade_frontalface_default.xml";
 
     // Create results directory if it doesn't exist
     if (!fs::exists(resultsDir)) {
@@ -23,8 +25,7 @@ void FaceDetection(const string& singleImagePath = "") {
 
     // Load Haar cascade classifier
     CascadeClassifier faceCascade;
-    string cascadePath = "cpp/teacher_dataset/haarcascade_frontalface_default.xml";
-    if (!faceCascade.load(cascadePath)) {
+    if (!faceCascade.load(cascadePath.string())) {
         cerr << "Failed to load cascade classifier from: " << cascadePath << endl;
         return;
     }
@@ -38,7 +39,7 @@ void FaceDetection(const string& singleImagePath = "") {
         }
 
         vector<Rect> faces;
-        faceCascade.detectMultiScale(img, faces, 1.1, 10); // now accessible
+        faceCascade.detectMultiScale(img, faces, 1.1, 10);
         cout << "Found " << faces.size() << " faces in " << imgPath << endl;
 
         for (const auto& face : faces) {
@@ -53,29 +54,31 @@ void FaceDetection(const string& singleImagePath = "") {
         }
     };
 
+    // If a single image is provided
     if (!singleImagePath.empty()) {
         processImage(singleImagePath);
-    } else {
-        // Process all images in dataset directory
-        if (!fs::exists(datasetDir)) {
-            cerr << "Dataset directory does not exist: " << datasetDir << endl;
-            return;
-        }
+        return;
+    }
 
-        for (const auto& entry : fs::directory_iterator(datasetDir)) {
-            if (entry.is_regular_file()) {
-                processImage(entry.path());
-            }
+    // Process all images in dataset directory
+    if (!fs::exists(datasetDir)) {
+        cerr << "Dataset directory does not exist: " << datasetDir << endl;
+        return;
+    }
+
+    for (const auto& entry : fs::directory_iterator(datasetDir)) {
+        if (entry.is_regular_file()) {
+            processImage(entry.path());
         }
     }
 }
 
 int main(int argc, char** argv) {
     if (argc > 1) {
-        // Manual file mode
+        // Manual single-image mode
         FaceDetection(argv[1]);
     } else {
-        // Default: process dataset folder
+        // Default: process all dataset images
         FaceDetection();
     }
     return 0;
