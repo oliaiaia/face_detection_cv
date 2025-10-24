@@ -5,70 +5,78 @@
 #include <unistd.h>
 #include <vector>
 #include <filesystem>
-
 #include <opencv2/objdetect.hpp>
-
 
 using namespace std;
 using namespace cv;
 namespace fs = std::filesystem;
 
-void faseDetection() {
-    string pathToPhotosFromMainDir = "/dataset/";
-    string datasetPath = SOURCE_DIR + pathToPhotosFromMainDir;
-    
-    //study cascade classifier
-    CascadeClassifier faseCascade;
-    string pathToStudyDatasetFromMainDir = "/teacher_dataset/haarcascade_frontalface_default.xml";
-    faseCascade.load(SOURCE_DIR + pathToStudyDatasetFromMainDir);
-    if(faseCascade.empty()) 
-    {
-        cerr << "Empty cascade classifier file!" << endl;
+// Allow both manual file and full dataset folder modes
+void FaceDetection(const string& singleImagePath = "") {
+    fs::path datasetDir = "cpp/dataset";
+    fs::path resultsDir = "cpp/results";
+
+    // Create results directory if it doesn't exist
+    if (!fs::exists(resultsDir)) {
+        fs::create_directories(resultsDir);
+    }
+
+    // Load Haar cascade classifier
+    CascadeClassifier faceCascade;
+    string cascadePath = "cpp/teacher_dataset/haarcascade_frontalface_default.xml";
+    if (!faceCascade.load(cascadePath)) {
+        cerr << "Failed to load cascade classifier from: " << cascadePath << endl;
         return;
     }
 
-    // Process each image in the dataset folder
-    for (const auto & entry : fs::directory_iterator(datasetPath)) {
-        string imgPath = entry.path();
-        cout << "Processing: " << imgPath << endl;
-        
-        // Read the image
-        Mat img = imread(imgPath);
-        if(img.empty()) {
+    // Function to process a single image
+    auto processImage = [&](const fs::path& imgPath) -> void {
+        Mat img = imread(imgPath.string());
+        if (img.empty()) {
             cerr << "Could not read image: " << imgPath << endl;
-            continue;
+            return;
         }
 
         vector<Rect> faces;
-        faseCascade.detectMultiScale(img, faces, 1.1, 10);
+        faceCascade.detectMultiScale(img, faces, 1.1, 10); // now accessible
         cout << "Found " << faces.size() << " faces in " << imgPath << endl;
 
-        // Draw rectangles around detected faces
-        for(const auto& face : faces) {
+        for (const auto& face : faces) {
             rectangle(img, face.tl(), face.br(), Scalar(255, 0, 255), 3);
         }
 
-        // Show the image with detected faces
-        string windowName = "Detected faces - " + fs::path(imgPath).filename().string();
-        // imshow(windowName, img);
-        
-        // Save the result
-        fs::path resultsDir = fs::path(SOURCE_DIR) / "results";
-        if (!fs::exists(resultsDir)) {
-            fs::create_directories(resultsDir);
+        fs::path outFile = resultsDir / (imgPath.stem().string() + "_detected.jpg");
+        if (!imwrite(outFile.string(), img)) {
+            cerr << "Failed to save output image: " << outFile << endl;
+        } else {
+            cout << "Saved result to " << outFile << endl;
         }
-        fs::path outFile = resultsDir / (fs::path(imgPath).stem().string() + "_detected.jpg");
-        string outputPath = outFile.string();
-        imwrite(outputPath, img);
-        
-        // destroyWindow(windowName);
+    };
+
+    if (!singleImagePath.empty()) {
+        processImage(singleImagePath);
+    } else {
+        // Process all images in dataset directory
+        if (!fs::exists(datasetDir)) {
+            cerr << "Dataset directory does not exist: " << datasetDir << endl;
+            return;
+        }
+
+        for (const auto& entry : fs::directory_iterator(datasetDir)) {
+            if (entry.is_regular_file()) {
+                processImage(entry.path());
+            }
+        }
     }
-
-
-
 }
 
-int main() {
-    faseDetection();
+int main(int argc, char** argv) {
+    if (argc > 1) {
+        // Manual file mode
+        FaceDetection(argv[1]);
+    } else {
+        // Default: process dataset folder
+        FaceDetection();
+    }
     return 0;
 }
