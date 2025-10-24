@@ -1,0 +1,33 @@
+name: C++ Build & Test (Face Detection)
+
+on:
+  push:
+    branches: [ main, feat/tests, backup/tests ]
+  pull_request:
+    branches: [ main, feat/tests, backup/tests ]
+
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y cmake g++ libopencv-dev
+
+    - name: Configure CMake project
+      working-directory: cpp
+      run: cmake -B build
+
+    - name: Build project
+      working-directory: cpp
+      run: cmake --build build -j
+
+    - name: Run tests
+      working-directory: cpp/build
+      run: ctest --output-on-failure
