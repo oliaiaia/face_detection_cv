@@ -1,74 +1,60 @@
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
+#include "detector.h"
+#include <opencv2/opencv.hpp>
 #include <iostream>
-#include <unistd.h>
-#include <vector>
 #include <filesystem>
-
-#include <opencv2/objdetect.hpp>
-
 
 using namespace std;
 using namespace cv;
 namespace fs = std::filesystem;
 
-void faseDetection() {
-    string pathToPhotosFromMainDir = "/dataset/";
-    string datasetPath = SOURCE_DIR + pathToPhotosFromMainDir;
-    
-    //study cascade classifier
-    CascadeClassifier faseCascade;
-    string pathToStudyDatasetFromMainDir = "/teacher_dataset/haarcascade_frontalface_default.xml";
-    faseCascade.load(SOURCE_DIR + pathToStudyDatasetFromMainDir);
-    if(faseCascade.empty()) 
-    {
-        cerr << "Empty cascade classifier file!" << endl;
-        return;
-    }
-
-    // Process each image in the dataset folder
-    for (const auto & entry : fs::directory_iterator(datasetPath)) {
-        string imgPath = entry.path();
-        cout << "Processing: " << imgPath << endl;
-        
-        // Read the image
-        Mat img = imread(imgPath);
-        if(img.empty()) {
-            cerr << "Could not read image: " << imgPath << endl;
-            continue;
-        }
-
-        vector<Rect> faces;
-        faseCascade.detectMultiScale(img, faces, 1.1, 10);
-        cout << "Found " << faces.size() << " faces in " << imgPath << endl;
-
-        // Draw rectangles around detected faces
-        for(const auto& face : faces) {
-            rectangle(img, face.tl(), face.br(), Scalar(255, 0, 255), 3);
-        }
-
-        // Show the image with detected faces
-        string windowName = "Detected faces - " + fs::path(imgPath).filename().string();
-        // imshow(windowName, img);
-        
-        // Save the result
-        fs::path resultsDir = fs::path(SOURCE_DIR) / "results";
-        if (!fs::exists(resultsDir)) {
-            fs::create_directories(resultsDir);
-        }
-        fs::path outFile = resultsDir / (fs::path(imgPath).stem().string() + "_detected.jpg");
-        string outputPath = outFile.string();
-        imwrite(outputPath, img);
-        
-        // destroyWindow(windowName);
-    }
-
-
-
-}
-
 int main() {
-    faseDetection();
-    return 0;
+    try {
+        // Paths inside the container
+        const string input_dir = "/app/dataset";
+        const string output_dir = "/app/results";
+        const string cascade_path = "/app/teacher_dataset/haarcascade_frontalface_default.xml";
+
+        // Initialize the cascade
+        init_cascade(cascade_path);
+
+        // Check if the input directory exists
+        if (!fs::exists(input_dir)) {
+            cerr << "Input directory not found: " << input_dir << endl;
+            return 1;
+        }
+
+        // Create the output directory if it does not exist
+        if (!fs::exists(output_dir)) {
+            fs::create_directories(output_dir);
+        }
+
+        // Process each image in the input directory
+        for (const auto& entry : fs::directory_iterator(input_dir)) {
+            string img_path = entry.path().string();
+            cout << "Processing: " << img_path << endl;
+
+            Mat img = imread(img_path);
+            if (img.empty()) {
+                cerr << "Could not read image: " << img_path << endl;
+                continue;
+            }
+
+            // Face detection
+            auto faces = detect_faces(img);
+            cout << "Found " << faces.size() << " faces in " << img_path << endl;
+
+            // Draw bounding boxes
+            Mat result = draw_faces(img, faces);
+
+            // Save the result
+            fs::path out_file = fs::path(output_dir) / (fs::path(img_path).stem().string() + "_detected.jpg");
+            imwrite(out_file.string(), result);
+        }
+
+        cout << "Face detection completed successfully." << endl;
+        return 0;
+    } catch (const exception& e) {
+        cerr << "Error: " << e.what() << endl;
+        return 1;
+    }
 }
