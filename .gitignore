@@ -1,1 +1,8 @@
-build
+build/
+__pycache__/
+*.pyc
+*.o
+*.so
+.vscode/
+cpp/results/
+cpp/dataset/
