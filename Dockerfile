@@ -9,9 +9,14 @@ WORKDIR /app
 
 COPY . .
 
-RUN mkdir build && cd build \
-    && cmake .. \
+# Создаем структуру папок для программы
+RUN mkdir -p cpp/teacher_dataset cpp/dataset cpp/results && \
+    cp teacher_dataset/*.xml cpp/teacher_dataset/ && \
+    cp -r dataset/* cpp/dataset/ 2>/dev/null || true
+
+# Собираем из папки cpp
+RUN mkdir -p build && cd build \
+    && cmake ../cpp \
     && cmake --build .
 
-
-CMD ["./build/base"]
+CMD ["./build/face_detector"]
